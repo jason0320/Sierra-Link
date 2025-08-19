@@ -1,0 +1,26 @@
+{
+  "id":"sierra_link",
+	"name":"zz Sierra Link",
+	"author":"Happy Panda",	
+	"version":"0.0.2",
+	"description":"A silly hullmod to Sierramax",
+	"gameVersion":"0.98",
+	"jars":["jars/sierralink.jar"],
+	"dependencies": [
+        {
+            "id": "lw_lazylib",
+            "name": "LazyLib",
+            "version": "3.0.0"
+        },
+        {
+            "id": "shaderLib",
+            "name": "GraphicsLib",
+            "version": "1.12.2"
+        },
+        {
+   	    "id": "secretsofthefrontier",
+            "name": "Secrets of the Frontier",
+        },
+    ],	
+}
+

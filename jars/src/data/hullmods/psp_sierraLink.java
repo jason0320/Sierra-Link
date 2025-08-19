@@ -1,0 +1,111 @@
+package data.hullmods;
+
+import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.CampaignUIAPI.CoreUITradeMode;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import com.fs.starfarer.api.combat.BaseHullMod;
+import com.fs.starfarer.api.combat.MutableShipStatsAPI;
+import com.fs.starfarer.api.combat.ShipAPI;
+import com.fs.starfarer.api.combat.ShipVariantAPI;
+
+/**
+ * psp_sierraLink
+ * Installs/removes Secrets of the Frontier's "Sierra's Concord" when this hullmod
+ * is added/removed – but installs it as a *regular* hullmod so the player can S-mod it.
+ *
+ * Also cleans up the inert tag when this hullmod is removed.
+ */
+public class psp_sierraLink extends BaseHullMod {
+
+    public static final String ID = "psp_sierraLink";
+
+    // Cross-mod constants
+    private static final String SOTF_MOD_ID = "secretsofthefrontier";
+    private static final String CONCORD = "sotf_sierrasconcord";
+    private static final String INERT_TAG = "sotf_inert";
+
+    // Memory keys (support both with/without '$' just in case)
+    private static final String MEM_KEY_NO_DOLLAR = "sotf_metSierra";
+    private static final String MEM_KEY_DOLLAR    = "$sotf_metSierra";
+
+    private boolean sotfEnabled() {
+        try {
+            return Global.getSettings().getModManager().isModEnabled(SOTF_MOD_ID);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private boolean playerMetSierra() {
+        try {
+            if (Global.getSector() == null || Global.getSector().getPlayerFleet() == null) return false;
+            MemoryAPI mem = Global.getSector().getMemoryWithoutUpdate();
+            return (mem.getBoolean(MEM_KEY_NO_DOLLAR) || mem.getBoolean(MEM_KEY_DOLLAR));
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isApplicableToShip(ShipAPI ship) {
+        // Keep it selectable only when SOTF is present; returning true avoids the hullmod being greyed-out when present.
+        return ship != null && sotfEnabled();
+    }
+
+    @Override
+    public String getUnapplicableReason(ShipAPI ship) {
+        if (!sotfEnabled()) return "Requires Secrets of the Frontier";
+        return null;
+    }
+
+    /**
+     * This hook is called by the refit UI whenever add/remove is checked.
+     * We piggyback on it to install/remove the dependent hullmod in a way that
+     * preserves S-modding: add as a normal mod; only auto-remove if it isn't an S-mod.
+     */
+    @Override
+    public boolean canBeAddedOrRemovedNow(ShipAPI ship, MarketAPI market, CoreUITradeMode mode) {
+        if (ship == null) return true;
+        if (!sotfEnabled()) return true;
+
+        ShipVariantAPI v = ship.getVariant();
+        if (v == null) return true;
+
+        boolean hasLink = v.hasHullMod(ID) || v.getPermaMods().contains(ID);
+
+        if (hasLink) {
+            // Ensure Concord is present as a REGULAR mod so the player can S-mod it later.
+            if (!v.hasHullMod(CONCORD)) {
+                v.addMod(CONCORD);                 // NOT addPermaMod!
+                v.addTag(INERT_TAG);            // Just in case something left it inert
+            }
+        } else {
+            // Our link was removed: if Concord isn't S-modded, clean it up.
+            if (v.hasHullMod(CONCORD)) {
+                v.removePermaMod(CONCORD);
+            }
+            // Always clear the inert tag if present
+            if (v.getTags().contains(INERT_TAG)) {
+                v.removeTag(INERT_TAG);
+            }
+        }
+
+        return true; // allow add/remove
+    }
+
+    // Refits/Combat safety: make sure the dependent mod exists as a regular mod.
+    @Override
+    public void applyEffectsAfterShipCreation(ShipAPI ship, String id) {
+        if (ship == null || !sotfEnabled()) return;
+        ShipVariantAPI v = ship.getVariant();
+        if (v == null) return;
+        if (v.hasHullMod(ID)) {
+            if (!v.hasHullMod(CONCORD)) {
+                v.addMod(CONCORD);
+                v.addTag(INERT_TAG);
+            }
+        }
+    }
+}
