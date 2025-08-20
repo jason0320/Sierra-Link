@@ -37,7 +37,6 @@ public class psp_sierraLink extends BaseHullMod {
         }
     }
 
-    @SuppressWarnings("unused")
     private boolean playerMetSierra() {
         try {
             if (Global.getSector() == null || Global.getSector().getPlayerFleet() == null) return false;
@@ -46,6 +45,15 @@ public class psp_sierraLink extends BaseHullMod {
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    /**
+     * NEW: Control whether this hullmod appears in the refit screen's mod picker.
+     * If the player hasn't met Sierra, keep it hidden.
+     */
+    @Override
+    public boolean showInRefitScreenModPickerFor(ShipAPI ship) {
+        return playerMetSierra();
     }
 
     @Override
