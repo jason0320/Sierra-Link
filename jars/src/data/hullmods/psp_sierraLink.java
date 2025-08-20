@@ -5,7 +5,6 @@ import com.fs.starfarer.api.campaign.CampaignUIAPI.CoreUITradeMode;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.BaseHullMod;
-import com.fs.starfarer.api.combat.MutableShipStatsAPI;
 import com.fs.starfarer.api.combat.ShipAPI;
 import com.fs.starfarer.api.combat.ShipVariantAPI;
 
@@ -26,8 +25,7 @@ public class psp_sierraLink extends BaseHullMod {
     private static final String INERT_TAG = "sotf_inert";
 
     // Memory keys (support both with/without '$' just in case)
-    private static final String MEM_KEY_NO_DOLLAR = "sotf_metSierra";
-    private static final String MEM_KEY_DOLLAR    = "$sotf_metSierra";
+    private static final String MEM_KEY    = "$sotf_metSierra";
 
     private boolean sotfEnabled() {
         try {
@@ -37,14 +35,13 @@ public class psp_sierraLink extends BaseHullMod {
         }
     }
 
-    private boolean playerMetSierra() {
-        try {
-            if (Global.getSector() == null || Global.getSector().getPlayerFleet() == null) return false;
-            MemoryAPI mem = Global.getSector().getMemoryWithoutUpdate();
-            return (mem.getBoolean(MEM_KEY_NO_DOLLAR) || mem.getBoolean(MEM_KEY_DOLLAR));
-        } catch (Throwable t) {
-            return false;
-        }
+    /** Returns true iff the player's memory has the met-Sierra flag set to true. */
+    private static boolean playerHasMetSierra() {
+        if (Global.getSector() == null) return false;
+        MemoryAPI mem = Global.getSector().getPlayerMemoryWithoutUpdate();
+        if (mem == null) return false;
+        if (mem.contains(MEM_KEY)) return mem.getBoolean(MEM_KEY);
+        return false;
     }
 
     /**
@@ -53,7 +50,7 @@ public class psp_sierraLink extends BaseHullMod {
      */
     @Override
     public boolean showInRefitScreenModPickerFor(ShipAPI ship) {
-        return playerMetSierra();
+        return playerHasMetSierra();
     }
 
     @Override
