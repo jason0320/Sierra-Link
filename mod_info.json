@@ -2,7 +2,7 @@
   "id":"sierra_link",
 	"name":"zz Sierra Link",
 	"author":"Happy Panda",	
-	"version":"0.0.2",
+	"version":"0.0.4",
 	"description":"A silly hullmod to Sierramax",
 	"gameVersion":"0.98",
 	"jars":["jars/sierralink.jar"],

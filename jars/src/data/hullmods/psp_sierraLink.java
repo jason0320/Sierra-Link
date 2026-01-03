@@ -100,17 +100,4 @@ public class psp_sierraLink extends BaseHullMod {
         return true; // allow add/remove
     }
 
-    // Refits/Combat safety: make sure the dependent mod exists as a regular mod.
-    @Override
-    public void applyEffectsAfterShipCreation(ShipAPI ship, String id) {
-        if (ship == null || !sotfEnabled()) return;
-        ShipVariantAPI v = ship.getVariant();
-        if (v == null) return;
-        if (v.hasHullMod(ID)) {
-            if (!v.hasHullMod(CONCORD)) {
-                v.addMod(CONCORD);
-                v.addTag(INERT_TAG);
-            }
-        }
-    }
 }

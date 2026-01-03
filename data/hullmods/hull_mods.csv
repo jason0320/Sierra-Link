@@ -1,2 +1,3 @@
 name,id,tier,rarity,tech/manufacturer,tags,uiTags,base value,unlocked,hidden,hiddenEverywhere,cost_frigate,cost_dest,cost_cruiser,cost_capital,script,desc,short,sModDesc,sprite
-Concord Link Device,psp_sierraLink,,,,"no_drop, special, no_build_in",Special,,TRUE,,,0,0,0,0,data.hullmods.psp_sierraLink,Allows Sierra to control ship.,Allows Sierra to control ship,,graphics/hullmods/sierra_link.png
+Concord Link Device,psp_sierraLink,,,,"no_drop, special, no_build_in",Special,,TRUE,,,0,0,0,0,data.hullmods.psp_sierraLink,Allow Sierra to control ship.,Allows Sierra to control ship,,graphics/hullmods/sierra_link.png
+Concord Link Device MK2,psp_sierraLinkMK2,,,,"no_drop, special, no_build_in",Special,,TRUE,,,0,0,0,0,data.hullmods.psp_sierraLinkMK2,Allow Sierra to control ship and install special ship system.,Allow Sierra to control ship and install special ship system,,graphics/hullmods/sierra_link.png

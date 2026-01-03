@@ -3,3 +3,9 @@ Init Build
 
 Verion 0.0.2
 Fixed not able to add special hullmods
+
+Verion 0.0.3
+Fixed hullmod showing even without meeting Sierra
+
+Verion 0.0.4
+Add hullmod to change shipsystem to Concord Shift
