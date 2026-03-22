@@ -9,3 +9,6 @@ Fixed hullmod showing even without meeting Sierra
 
 Verion 0.0.4
 Add hullmod to change shipsystem to Concord Shift
+
+Verion 0.0.5
+Fixed Concord Shift hullmod
