@@ -23,34 +23,36 @@ public class psp_sierraLinkMK2 extends BaseHullMod {
     private static final String ACTIVE_TAG = "psp_sierraLink_active";
     private static final String PRIVATE_SPEC_TAG = "psp_sierraLink_privateSpec";
     private static final String MEM_KEY = "$sotf_metSierra";
+    private static final String DUMMY_MOD = "andrada_mods"; // any vanilla hullmod
+    private static boolean cleanupInProgress = false;
 
     @Override
     public void applyEffectsBeforeShipCreation(ShipAPI.HullSize hullSize, MutableShipStatsAPI stats, String id) {
+        if (cleanupInProgress) return;
+
         ShipVariantAPI v = stats.getVariant();
         if (v == null) return;
 
-        ensurePrivateHullSpec(v);
-
-        if (!v.hasHullMod(CONCORD)) {
-            v.addMod(CONCORD);
+        // Re-initialize if variant was reset (tags lost but spec still has SHIFT)
+        if (!v.hasTag(PRIVATE_SPEC_TAG) && SHIFT.equals(v.getHullSpec().getShipSystemId())) {
+            // Spec already cloned (has SHIFT), just restore tags
+            v.addTag(PRIVATE_SPEC_TAG);
         }
 
-        if (!v.hasTag(ACTIVE_TAG)) {
-            v.addTag(ACTIVE_TAG);
-        }
-
-        if (!v.hasTag(INERT_TAG)) {
-            v.addTag(INERT_TAG);
-        }
+        if (!v.hasTag(ACTIVE_TAG)) v.addTag(ACTIVE_TAG);
+        if (!v.hasHullMod(CONCORD)) v.addMod(CONCORD);
+        if (!v.hasTag(INERT_TAG)) v.addTag(INERT_TAG);
 
         String recorded = getRecordedSystem(v);
         if (recorded == null) {
-            String currentSys = v.getHullSpec().getShipSystemId();
-            if (currentSys != null && !SHIFT.equals(currentSys)) {
-                v.addTag(ORIG_TAG + currentSys);
+            // Only record original if current spec doesn't already have SHIFT set by us
+            String hullSpecOriginal = Global.getSettings().getHullSpec(v.getHullSpec().getHullId()).getShipSystemId();
+            if (hullSpecOriginal != null && !SHIFT.equals(hullSpecOriginal)) {
+                v.addTag(ORIG_TAG + hullSpecOriginal);
             }
         }
 
+        ensurePrivateHullSpec(v);
         v.getHullSpec().setShipSystemId(SHIFT);
     }
 
@@ -63,7 +65,18 @@ public class psp_sierraLinkMK2 extends BaseHullMod {
     @Override
     public void advanceInCampaign(FleetMemberAPI member, float amount) {
         if (member == null || member.getVariant() == null) return;
-        syncInertTag(member.getVariant(), isSierraCaptain(member.getCaptain()));
+
+        ShipVariantAPI v = member.getVariant();
+
+        // Cleanup detection: ACTIVE_TAG present but hullmod gone
+        if (v.hasTag(ACTIVE_TAG) && !v.hasHullMod(ID2) && !v.getPermaMods().contains(ID2)) {
+            if (!cleanupInProgress) {
+                performCleanup(v);
+            }
+            return;
+        }
+
+        syncInertTag(v, isSierraCaptain(member.getCaptain()));
     }
 
     @Override
@@ -77,13 +90,13 @@ public class psp_sierraLinkMK2 extends BaseHullMod {
         if (ship == null || ship.getVariant() == null) return true;
 
         ShipVariantAPI v = ship.getVariant();
+        syncInertTag(v, isSierraCaptain(ship.getCaptain()));
 
-        if (!v.hasHullMod(ID2) && v.hasTag(ACTIVE_TAG)) {
+        // Trigger cleanup when: mod is present, system is SHIFT, but tags lost (variant was reset)
+        // AND mod is being removed (detected via hasShift but no ACTIVE_TAG)
+        if (!v.hasHullMod(ID2) && SHIFT.equals(v.getHullSpec().getShipSystemId())) {
             performCleanup(v);
         }
-
-        // Keep inert state in sync even while the refit screen is open.
-        syncInertTag(v, isSierraCaptain(ship.getCaptain()));
 
         return true;
     }
@@ -108,27 +121,38 @@ public class psp_sierraLinkMK2 extends BaseHullMod {
     private void ensurePrivateHullSpec(ShipVariantAPI v) {
         if (v.hasTag(PRIVATE_SPEC_TAG)) return;
 
-        // Detach this variant from the shared hull spec so the ship-system swap
-        // only affects this exact ship/variant.
-        ShipVariantAPI copy = v.clone();
-        ShipHullSpecAPI privateSpec = copy.getHullSpec();
-        v.setHullSpecAPI(privateSpec);
+        try {
+            ShipHullSpecAPI cloned = (ShipHullSpecAPI) ReflectionUtils.invoke("clone", v.getHullSpec());
+            if (cloned == null) return;
+            v.setHullSpecAPI(cloned);
+        } catch (Throwable e) {
+            return;
+        }
 
         v.addTag(PRIVATE_SPEC_TAG);
     }
 
     private void performCleanup(ShipVariantAPI v) {
-        v.removePermaMod(CONCORD);
-        v.removePermaMod(HullMods.PHASE_FIELD);
+        cleanupInProgress = true;
+        try {
+            v.removePermaMod(CONCORD);
+            v.removePermaMod(HullMods.PHASE_FIELD);
 
-        String recorded = getRecordedSystem(v);
-        if (recorded != null) {
-            v.getHullSpec().setShipSystemId(recorded);
-            v.removeTag(ORIG_TAG + recorded);
+            // Instead of swapping specs, just fix the system ID on whatever spec is current
+            String recorded = getRecordedSystem(v);
+            String restoreTo = recorded != null ? recorded
+                    : Global.getSettings().getHullSpec(v.getHullSpec().getHullId()).getShipSystemId();
+
+            v.getHullSpec().setShipSystemId(restoreTo);
+
+            if (recorded != null) v.removeTag(ORIG_TAG + recorded);
+            v.removeTag(ACTIVE_TAG);
+            v.removeTag(PRIVATE_SPEC_TAG);
+            v.removeTag(INERT_TAG);
+
+        } finally {
+            cleanupInProgress = false;
         }
-
-        v.removeTag(ACTIVE_TAG);
-        v.removeTag(PRIVATE_SPEC_TAG);
     }
 
     private String getRecordedSystem(ShipVariantAPI v) {
@@ -164,4 +188,5 @@ public class psp_sierraLinkMK2 extends BaseHullMod {
         if (!sotfEnabled()) return "Requires Secrets of the Frontier";
         return null;
     }
+
 }
