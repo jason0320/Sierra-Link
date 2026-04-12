@@ -12,3 +12,6 @@ Add hullmod to change shipsystem to Concord Shift
 
 Verion 0.0.5
 Fixed Concord Shift hullmod
+
+Verion 0.0.6
+Temp Fix Concord Shift hullmod
